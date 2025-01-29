@@ -86,6 +86,12 @@
 %              to screen a table tracking compression statistics through level.
 %              Special levels: 'T', tree sorting.
 %
+%      - PROXYBYLEVEL: use a different proxy function for each level if 
+%                      PROXYBYLEVEL = 1. In this case PXYFUN should be a function
+%                      which accepts the integer LVL and returns a function 
+%                      with the usual PXYFUN arguments described above. 
+%                      (default: PROXYBYLEVEL = 0)
+%
 %    Primary references:
 %
 %      K.L. Ho, L. Ying. Hierarchical interpolative factorization for elliptic
@@ -118,6 +124,7 @@ function F = rskelf(A,x,occ,rank_or_tol,pxyfun,opts)
   if ~isfield(opts,'symm'), opts.symm = 'n'; end
   if ~isfield(opts,'stop'), opts.stop = Inf; end
   if ~isfield(opts,'verb'), opts.verb = 0; end
+  if ~isfield(opts,'proxybylevel'), opts.proxybylevel = false; end
 
   % check inputs
   opts.symm = chksymm(opts.symm);
@@ -141,6 +148,16 @@ function F = rskelf(A,x,occ,rank_or_tol,pxyfun,opts)
   t = hypoct(x,occ,opts.lvlmax,opts.ext);
   te = toc(ts);
   if opts.verb, fprintf('%3s | %63.2e\n','t',te); end
+
+  % pre-compute level-dependent proxy functions if requested
+  pxyfunlvl = cell(t.nlvl, 1);
+  if opts.proxybylevel
+    for lvl = 1:t.nlvl
+      pxyfunlvl{lvl} = pxyfun(lvl);
+    end
+  else
+    pxyfunlvl(:) = {pxyfun};
+  end
 
   % count nonempty boxes at each level
   pblk = zeros(t.nlvl+1,1);
@@ -202,7 +219,7 @@ function F = rskelf(A,x,occ,rank_or_tol,pxyfun,opts)
       Kpxy = zeros(0,nslf);
       if lvl > 2
         if isempty(pxyfun), nbr = setdiff(find(rem),slf);
-        else, [Kpxy,nbr] = pxyfun(x,slf,nbr,l,t.nodes(i).ctr);
+        else, [Kpxy,nbr] = pxyfunlvl{lvl}(x,slf,nbr,l,t.nodes(i).ctr);
         end
       end
 

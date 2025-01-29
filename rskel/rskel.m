@@ -72,6 +72,12 @@
 %              to screen a table tracking row/column compression statistics
 %              through level. Special levels: 'T', tree sorting.
 %
+%      - PROXYBYLEVEL: use a different proxy function for each level if 
+%                      PROXYBYLEVEL = 1. In this case PXYFUN should be a function
+%                      which accepts the integer LVL and returns a function 
+%                      with the usual PXYFUN arguments described above. 
+%                      (default: PROXYBYLEVEL = 0)
+%
 %    Primary references:
 %
 %      K.L. Ho, L. Greengard. A fast direct solver for structured linear systems
@@ -108,6 +114,7 @@ function F = rskel(A,rx,cx,occ,rank_or_tol,pxyfun,opts)
   if ~isfield(opts,'rrqr_iter'), opts.rrqr_iter = Inf; end
   if ~isfield(opts,'symm'), opts.symm = 'n'; end
   if ~isfield(opts,'verb'), opts.verb = 0; end
+  if ~isfield(opts,'proxybylevel'), opts.proxybylevel = false; end
 
   % check inputs
   opts.symm = chksymm(opts.symm);
@@ -141,6 +148,16 @@ function F = rskel(A,rx,cx,occ,rank_or_tol,pxyfun,opts)
     t.nodes(i).xi = [];
   end
   if opts.verb, fprintf('%3s | %63.2e\n','t',te); end
+
+  % pre-compute level-dependent proxy functions if requested
+  pxyfunlvl = cell(t.nlvl, 1);
+  if opts.proxybylevel
+    for lvl = 1:t.nlvl
+      pxyfunlvl{lvl} = pxyfun(lvl);
+    end
+  else
+    pxyfunlvl(:) = {pxyfun};
+  end
 
   % count nonempty boxes at each level
   pblk = zeros(t.nlvl+1,1);
@@ -212,7 +229,7 @@ function F = rskel(A,rx,cx,occ,rank_or_tol,pxyfun,opts)
       Kpxy = zeros(length(rslf),0);
       if lvl > 2
         if isempty(pxyfun), cnbr = setdiff(find(crem),cslf);
-        else, [Kpxy,cnbr] = pxyfun('r',rx,cx,rslf,cnbr,l,t.nodes(i).ctr);
+        else, [Kpxy,cnbr] = pxyfunlvl{lvl}('r',rx,cx,rslf,cnbr,l,t.nodes(i).ctr);
         end
       end
       K = [full(A(rslf,cnbr)) Kpxy]';
@@ -223,7 +240,7 @@ function F = rskel(A,rx,cx,occ,rank_or_tol,pxyfun,opts)
         Kpxy = zeros(0,length(cslf));
         if lvl > 2
           if isempty(pxyfun), rnbr = setdiff(find(rrem),rslf);
-          else, [Kpxy,rnbr] = pxyfun('c',rx,cx,cslf,rnbr,l,t.nodes(i).ctr);
+          else, [Kpxy,rnbr] = pxyfunlvl{lvl}('c',rx,cx,cslf,rnbr,l,t.nodes(i).ctr);
           end
         end
         K = [full(A(rnbr,cslf)); Kpxy];
