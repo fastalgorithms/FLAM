@@ -151,7 +151,7 @@ function F = rskelf(A,x,occ,rank_or_tol,pxyfun,opts)
 
   % pre-compute level-dependent proxy functions if requested
   pxyfunlvl = cell(t.nlvl, 1);
-  if opts.proxybylevel
+  if opts.proxybylevel && ~isempty(pxyfun)
     for lvl = 1:t.nlvl
       pxyfunlvl{lvl} = pxyfun(lvl);
     end
