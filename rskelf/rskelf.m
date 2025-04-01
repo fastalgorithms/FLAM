@@ -150,13 +150,15 @@ function F = rskelf(A,x,occ,rank_or_tol,pxyfun,opts)
   if opts.verb, fprintf('%3s | %63.2e\n','t',te); end
 
   % pre-compute level-dependent proxy functions if requested
-  pxyfunlvl = cell(t.nlvl, 1);
-  if opts.proxybylevel && ~isempty(pxyfun)
-    for lvl = 1:t.nlvl
-      pxyfunlvl{lvl} = pxyfun(lvl);
+  pxyfunlvl = cell(t.nlvl+1, 1);
+  if ~isempty(pxyfun)
+    if opts.proxybylevel 
+      for lvl = 1:t.nlvl
+        pxyfunlvl{lvl} = pxyfun(lvl);
+      end
+    else
+      pxyfunlvl(:) = {pxyfun};
     end
-  else
-    pxyfunlvl(:) = {pxyfun};
   end
 
   % count nonempty boxes at each level

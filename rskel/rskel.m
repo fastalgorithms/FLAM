@@ -151,13 +151,16 @@ function F = rskel(A,rx,cx,occ,rank_or_tol,pxyfun,opts)
 
   % pre-compute level-dependent proxy functions if requested
   pxyfunlvl = cell(t.nlvl, 1);
-  if opts.proxybylevel && ~isempty(pxyfun)
-    for lvl = 1:t.nlvl
-      pxyfunlvl{lvl} = pxyfun(lvl);
+  if ~isempty(pxyfun)
+    if opts.proxybylevel 
+      for lvl = 1:t.nlvl
+        pxyfunlvl{lvl} = pxyfun(lvl);
+      end
+    else
+      pxyfunlvl(:) = {pxyfun};
     end
-  else
-    pxyfunlvl(:) = {pxyfun};
   end
+
 
   % count nonempty boxes at each level
   pblk = zeros(t.nlvl+1,1);
