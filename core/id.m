@@ -56,6 +56,9 @@ function [sk,rd,T,niter] = id(A,rank_or_tol,Tmax,rrqr_iter,fixed)
   assert(rrqr_iter >= 0,'FLAM:id:invalidRRQRIter', ...
          'Maximum number of RRQR iterations must be nonnegative.')
 
+  % suppress nearly singular matrix warning
+  warnStruct = warning('off','MATLAB:nearlySingularMatrix');
+
   % initialize
   [m,n] = size(A);
   niter = 0;
@@ -64,6 +67,9 @@ function [sk,rd,T,niter] = id(A,rank_or_tol,Tmax,rrqr_iter,fixed)
   if isempty(A)
     sk = []; rd = 1:n;
     T = zeros(0,n);
+
+    % revert nearly singular matrix warning to previous state
+    warning(warnStruct);
     return
   end
 
@@ -82,6 +88,9 @@ function [sk,rd,T,niter] = id(A,rank_or_tol,Tmax,rrqr_iter,fixed)
     if isempty(free)
       sk = fixed; rd = [];
       T = zeros(nfix,0);
+  
+      % revert nearly singular matrix warning to previous state
+      warning(warnStruct);
       return;
     end
 
@@ -245,4 +254,7 @@ function [sk,rd,T,niter] = id(A,rank_or_tol,Tmax,rrqr_iter,fixed)
     sk = [fixed free(sk)];
     rd = [free(rd)];
   end
+
+  % revert nearly singular matrix warning to previous state
+  warning(warnStruct);
 end
